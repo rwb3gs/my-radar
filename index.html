@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>市場風險雷達儀表板</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body class="bg-slate-900 text-slate-100 min-h-screen p-4 md:p-8">
+
+  <div class="max-w-4xl mx-auto space-y-6">
+    
+    <!-- 1. 標頭資訊 -->
+    <div class="flex flex-col md:flex-row md:items-center justify-between border-b border-slate-700 pb-4 gap-4">
+      <div>
+        <h1 class="text-2xl md:text-3xl font-bold tracking-wide">市場風險雷達儀表板</h1>
+        <p class="text-xs md:text-sm text-slate-400 mt-1">數據更新日期：<span id="data-date" class="font-mono text-cyan-400">載入中...</span></p>
+      </div>
+      <div class="flex items-center gap-3 bg-slate-800/80 px-4 py-2 rounded-xl border border-slate-700">
+        <span class="text-base text-slate-300 font-medium">策略燈號：</span>
+        <span id="strategy-light" class="text-3xl md:text-4xl leading-none">⚪</span>
+        <span id="strategy-level-text" class="px-3 py-1 bg-slate-700/80 border border-slate-600 rounded-lg text-sm md:text-base font-bold text-cyan-300">
+          策略級別: --
+        </span>
+      </div>
+    </div>
+
+    <!-- 2. 主要數據卡片網格 -->
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+      <div class="bg-slate-800/60 border border-slate-700/60 rounded-xl p-4 text-center">
+        <div class="text-xs text-slate-400 mb-1">市場總風險</div>
+        <div id="total-risk" class="text-2xl md:text-3xl font-extrabold text-amber-400">--</div>
+      </div>
+      <div class="bg-slate-800/60 border border-slate-700/60 rounded-xl p-4 text-center">
+        <div class="text-xs text-slate-400 mb-1">新增投入倍率</div>
+        <div id="investment-multiplier" class="text-2xl md:text-3xl font-extrabold text-emerald-400">--</div>
+      </div>
+      <div class="bg-slate-800/60 border border-slate-700/60 rounded-xl p-4 text-center">
+        <div class="text-xs text-slate-400 mb-1">資料完整度</div>
+        <div id="data-completeness" class="text-2xl md:text-3xl font-extrabold text-cyan-400">--</div>
+      </div>
+      <div class="bg-slate-800/60 border border-slate-700/60 rounded-xl p-4 text-center">
+        <div class="text-xs text-slate-400 mb-1">系統狀態</div>
+        <div class="text-xs font-medium text-emerald-400 mt-2">● 正常連線</div>
+      </div>
+    </div>
+
+    <!-- 3. 中間主要數據（雷達圖與風險來源） -->
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+      
+      <!-- 四象限雷達圖 -->
+      <div class="bg-slate-800/60 border border-slate-700/60 rounded-xl p-5 flex flex-col justify-between">
+        <h2 class="text-base font-semibold text-slate-200 mb-2">四象限風險分析</h2>
+        <div class="relative w-full aspect-square max-w-[340px] mx-auto">
+          <canvas id="radarChart"></canvas>
+        </div>
+      </div>
+
+      <!-- 前三大風險來源 -->
+      <div class="bg-slate-800/60 border border-slate-700/60 rounded-xl p-5 flex flex-col justify-between">
+        <div>
+          <h2 class="text-base font-semibold text-slate-200 mb-4">前三大風險指標來源</h2>
+          <div id="risk-sources-container" class="space-y-3">
+            <p class="text-slate-500 text-sm">資料載入中...</p>
+          </div>
+        </div>
+        <div class="mt-6 pt-4 border-t border-slate-700/50 text-xs text-slate-500">
+          * 註：風險分數越高代表市場該維度承受之風險越顯著。
+        </div>
+      </div>
+
+    </div>
+
+    <!-- 4. 今日策略敘述區塊 -->
+    <div class="bg-slate-800/60 border border-slate-700/60 rounded-xl p-5">
+      <div class="flex flex-col sm:flex-row sm:items-center justify-between mb-4 gap-1">
+        <h2 class="text-lg font-bold text-slate-100 flex items-center gap-2">
+          <span class="w-2 h-5 bg-cyan-400 rounded-full"></span> 今日策略
+        </h2>
+        <!-- 提醒副標題 -->
+        <span class="text-xs text-slate-400">
+          * 市場溫度是歷史數據結果，不用來預測高點/低點
+        </span>
+      </div>
+
+      <div class="space-y-4 text-sm">
+        <div class="flex flex-col md:flex-row md:items-center justify-between pb-3 border-b border-slate-700/50 gap-1">
+          <span class="text-slate-400 font-medium w-28 flex-shrink-0">→ 新增投入</span>
+          <span id="strat-action" class="text-emerald-400 font-bold text-base md:text-right">--</span>
+        </div>
+        <div class="flex flex-col md:flex-row md:items-start justify-between pb-3 border-b border-slate-700/50 gap-1">
+          <span class="text-slate-400 font-medium w-28 flex-shrink-0">→ 核心資產</span>
+          <span id="strat-core" class="text-slate-200 md:text-right font-medium">--</span>
+        </div>
+        <div class="flex flex-col md:flex-row md:items-start justify-between gap-1">
+          <span class="text-slate-400 font-medium w-28 flex-shrink-0">→ 原則</span>
+          <span id="strat-principle" class="text-slate-300 md:text-right">--</span>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <script>
+    const SUPABASE_URL = 'https://sktrmemtvarutrbcpwij.supabase.co';
+    const SUPABASE_ANON_KEY = 'sb_publishable_iPdnGKeCEfPuH2xZBYK4Sg_G8ivGx1p';
+    
+    const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    let radarChartInstance = null;
+
+    // 💡 方案 B：前端固定規則對照表 (對應 L1~L5)
+    const STRATEGY_MAP = {
+      'L1': {
+        signal: '低風險',
+        action: '100%',
+        core: '維持定期定額 / 可小幅增加',
+        principle: '不追價，若資產過低允許增加正常收入'
+      },
+      'L2': {
+        signal: '偏穩定',
+        action: '80%',
+        core: '維持定期定額',
+        principle: '正常投入'
+      },
+      'L3': {
+        signal: '警戒',
+        action: '60%',
+        core: '減碼定期定額',
+        principle: '降低新增速度，等待更好價格'
+      },
+      'L4': {
+        signal: '高風險',
+        action: '30%',
+        core: '大幅減碼定期定額 / 保留單筆彈性',
+        principle: '不追價，現金優先保留'
+      },
+      'L5': {
+        signal: '極端',
+        action: '0%',
+        core: '暫停新增風險資產 / 等待分批單筆',
+        principle: '不追價，不要求賣出既有核心資產'
+      }
+    };
+
+    // 依據分數取得同燈號色彩
+    function getScoreColor(score) {
+      if (score >= 80) return '#ef4444'; // 紅 (極高風險)
+      if (score >= 65) return '#f97316'; // 橘 (高風險)
+      if (score >= 45) return '#eab308'; // 黃 (中風險)
+      return '#10b981';                  // 綠 (低風險)
+    }
+
+    function initRadarChart(scores = [0, 0, 0, 0], lightColor = '#38bdf8') {
+      const ctx = document.getElementById('radarChart').getContext('2d');
+      if (radarChartInstance) radarChartInstance.destroy();
+
+      // 在四大象限標籤下方顯示分數 (格式如: 趨勢風險 \n (76.67))
+      const labels = [
+        [`趨勢風險`, `(${scores[0]})`],
+        [`情緒風險`, `(${scores[1]})`],
+        [`流動性風險`, `(${scores[2]})`],
+        [`估值風險`, `(${scores[3]})`]
+      ];
+
+      radarChartInstance = new Chart(ctx, {
+        type: 'radar',
+        data: {
+          labels: labels,
+          datasets: [{
+            label: '風險分數',
+            data: scores,
+            backgroundColor: 'rgba(56, 189, 248, 0.25)', 
+            borderColor: lightColor, // 同燈號主色
+            borderWidth: 2,
+            pointBackgroundColor: lightColor,
+            pointBorderColor: '#fff',
+            pointRadius: 4
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          scales: {
+            r: {
+              angleLines: { color: 'rgba(255, 255, 255, 0.15)' },
+              grid: { color: 'rgba(255, 255, 255, 0.15)' },
+              pointLabels: {
+                color: (context) => {
+                  // 標籤顏色與風險程度同燈號色連動
+                  const score = scores[context.index] || 0;
+                  return getScoreColor(score);
+                },
+                font: { 
+                  size: 14, // 👈 已將四象限字體由 12 放大為 15
+                  weight: 'bold' 
+                }
+              },
+              ticks: { display: false, beginAtZero: true, max: 100 },
+              suggestedMin: 0,
+              suggestedMax: 100
+            }
+          },
+          plugins: { legend: { display: false } }
+        }
+      });
+    }
+
+    async function fetchLatestData() {
+      try {
+        const { data, error } = await supabaseClient
+          .from('dashboard_daily')
+          .select('*')
+          .order('data_date', { ascending: false })
+          .limit(1);
+
+        if (error || !data || data.length === 0) return;
+        renderDashboard(data[0]);
+      } catch (err) {
+        console.error("連線錯誤:", err);
+      }
+    }
+
+    function renderDashboard(data) {
+      document.getElementById('data-date').innerText = data.data_date || '--';
+      document.getElementById('strategy-light').innerText = data.strategy_light || '🟢';
+      
+      // 取得策略等級 (如 L1 ~ L5)
+      const rawLevel = (data.strategy_level || 'L1').trim().toUpperCase();
+      const strategyInfo = STRATEGY_MAP[rawLevel] || STRATEGY_MAP['L1'];
+
+      // 右上角顯示：策略級別: L5 (極端)
+      document.getElementById('strategy-level-text').innerText = `策略級別: ${rawLevel} (${strategyInfo.signal})`;
+      
+      document.getElementById('total-risk').innerText = data.total_risk ?? '--';
+      
+      // 數值格式化
+      let multiplierVal = data.investment_multiplier;
+      if (typeof multiplierVal === 'number') {
+        multiplierVal = multiplierVal <= 1 ? `${Math.round(multiplierVal * 100)}%` : `${multiplierVal}%`;
+      }
+      document.getElementById('investment-multiplier').innerText = multiplierVal || strategyInfo.action;
+
+      let completenessVal = data.data_completeness;
+      if (typeof completenessVal === 'number') {
+        completenessVal = completenessVal <= 1 ? `${Math.round(completenessVal * 100)}%` : `${completenessVal}%`;
+      }
+      document.getElementById('data-completeness').innerText = completenessVal || '--';
+
+      // 雷達圖四象限
+      const radarScores = [
+        data.trend_risk || 0,
+        data.sentiment_risk || 0,
+        data.liquidity_risk || 0,
+        data.valuation_risk || 0
+      ];
+      initRadarChart(radarScores, getScoreColor(data.total_risk || 0));
+
+      // 渲染前三大風險指標
+      const riskContainer = document.getElementById('risk-sources-container');
+      riskContainer.innerHTML = '';
+      const topRisks = data.top_risk_sources || [];
+      if (Array.isArray(topRisks) && topRisks.length > 0) {
+        topRisks.forEach((item, index) => {
+          const itemEl = document.createElement('div');
+          itemEl.className = 'flex items-center justify-between p-3 bg-slate-900/60 rounded-lg border border-slate-700/40';
+          itemEl.innerHTML = `
+            <div class="flex items-center gap-3">
+              <span class="w-6 h-6 rounded-full bg-amber-500/20 text-amber-400 text-xs flex items-center justify-center font-bold">${index + 1}</span>
+              <span class="text-sm font-medium text-slate-200">${item.name}</span>
+            </div>
+            <span class="text-sm font-bold text-amber-400">${item.score} 分</span>
+          `;
+          riskContainer.appendChild(itemEl);
+        });
+      }
+
+      // 渲染今日策略描述 (直接使用對照表 STRATEGY_MAP)
+      document.getElementById('strat-action').innerText = strategyInfo.action;
+      document.getElementById('strat-core').innerText = strategyInfo.core;
+      document.getElementById('strat-principle').innerText = strategyInfo.principle;
+    }
+
+    window.addEventListener('DOMContentLoaded', () => {
+      initRadarChart();
+      fetchLatestData();
+    });
+  </script>
+</body>
+</html>
