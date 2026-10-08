@@ -12,14 +12,13 @@
 
   <div class="max-w-5xl mx-auto space-y-6">
     
-    <!-- 1. 標頭資訊（已移除重複的策略燈號與策略級別） -->
+    <!-- 1. 標頭資訊 -->
     <div class="flex flex-col sm:flex-row sm:items-center justify-between border-b border-slate-800 pb-4 gap-4">
       <div>
         <h1 class="text-2xl md:text-3xl font-bold tracking-wide text-white">Bin | 市場溫度 × 風險雷達</h1>
         <p class="text-xs md:text-sm text-slate-400 mt-1">數據更新日期：<span id="data-date" class="font-mono text-cyan-400">載入中...</span></p>
       </div>
       
-      <!-- 右上角僅保留：資料完整度與系統狀態 -->
       <div class="flex items-center gap-4 bg-slate-800/50 px-4 py-2.5 rounded-2xl border border-slate-700/60 self-start sm:self-auto">
         <div class="flex items-center gap-1.5">
           <span class="text-xs md:text-sm text-slate-400">資料完整度:</span>
@@ -37,28 +36,26 @@
       </div>
     </div>
 
-    <!-- 2. 主要數據 4 卡片網格（標題字體已放大，更容易閱讀） -->
+    <!-- 2. 主要數據 4 卡片網格（「策略燈號」與「策略級別」支援點擊查看說明） -->
     <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
       <div class="bg-slate-800/40 border border-slate-700/50 rounded-2xl p-4 text-center">
-        <!-- 💡 標題字體已放大 -->
         <div class="text-sm md:text-base font-semibold text-slate-300 mb-2">市場總風險</div>
         <div id="card-total-risk" class="text-3xl md:text-4xl font-extrabold text-amber-400">--</div>
       </div>
 
-      <div class="bg-slate-800/40 border border-slate-700/50 rounded-2xl p-4 text-center flex flex-col justify-between items-center">
-        <!-- 💡 標題字體已放大 -->
-        <div class="text-sm md:text-base font-semibold text-slate-300 mb-1">策略燈號</div>
+      <!-- 可點擊卡片 1：策略燈號 -->
+      <div onclick="openStrategyModal()" class="bg-slate-800/40 border border-slate-700/50 hover:border-cyan-500/50 hover:bg-slate-800/80 transition-all cursor-pointer rounded-2xl p-4 text-center flex flex-col justify-between items-center group">
+        <div class="text-sm md:text-base font-semibold text-slate-300 mb-1 group-hover:text-cyan-300 transition-colors">策略燈號</div>
         <div id="card-strategy-light" class="text-3xl md:text-4xl leading-none my-auto">🔴</div>
       </div>
 
-      <div class="bg-slate-800/40 border border-slate-700/50 rounded-2xl p-4 text-center flex flex-col justify-between items-center">
-        <!-- 💡 標題字體已放大 -->
-        <div class="text-sm md:text-base font-semibold text-slate-300 mb-1">策略級別</div>
+      <!-- 可點擊卡片 2：策略級別 -->
+      <div onclick="openStrategyModal()" class="bg-slate-800/40 border border-slate-700/50 hover:border-cyan-500/50 hover:bg-slate-800/80 transition-all cursor-pointer rounded-2xl p-4 text-center flex flex-col justify-between items-center group">
+        <div class="text-sm md:text-base font-semibold text-slate-300 mb-1 group-hover:text-cyan-300 transition-colors">策略級別</div>
         <div id="card-strategy-level" class="text-lg md:text-xl font-bold text-cyan-300 my-auto">L5 (極端)</div>
       </div>
 
       <div class="bg-slate-800/40 border border-slate-700/50 rounded-2xl p-4 text-center">
-        <!-- 💡 標題字體已放大 -->
         <div class="text-sm md:text-base font-semibold text-slate-300 mb-2">新增投入倍率</div>
         <div id="card-multiplier" class="text-3xl md:text-4xl font-extrabold text-emerald-400">0%</div>
       </div>
@@ -119,6 +116,67 @@
 
   </div>
 
+  <!-- 💡 點擊彈窗 (Modal)：策略等級說明 -->
+  <div id="strategyModal" class="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 hidden items-center justify-center p-4 transition-opacity">
+    <div class="bg-slate-900 border border-slate-700 rounded-2xl p-6 max-w-sm w-full shadow-2xl space-y-4 relative">
+      <!-- 關閉按鈕 -->
+      <button onclick="closeStrategyModal()" class="absolute top-4 right-4 text-slate-400 hover:text-white text-lg font-bold">✕</button>
+      
+      <h3 class="text-lg font-bold text-white border-b border-slate-800 pb-3 flex items-center gap-2">
+        <span>策略等級說明</span>
+      </h3>
+
+      <!-- 5 個等級對照列表 -->
+      <div class="space-y-3 text-sm">
+        <div class="flex items-center justify-between p-2.5 rounded-xl bg-slate-800/50 border border-slate-700/40">
+          <div class="flex items-center gap-3">
+            <span class="font-bold text-cyan-400 w-6">L1</span>
+            <span class="text-slate-200 font-medium">低風險</span>
+          </div>
+          <span class="text-xl">🟢</span>
+        </div>
+
+        <div class="flex items-center justify-between p-2.5 rounded-xl bg-slate-800/50 border border-slate-700/40">
+          <div class="flex items-center gap-3">
+            <span class="font-bold text-emerald-400 w-6">L2</span>
+            <span class="text-slate-200 font-medium">偏穩定</span>
+          </div>
+          <span class="text-xl">🟢</span>
+        </div>
+
+        <div class="flex items-center justify-between p-2.5 rounded-xl bg-slate-800/50 border border-slate-700/40">
+          <div class="flex items-center gap-3">
+            <span class="font-bold text-yellow-400 w-6">L3</span>
+            <span class="text-slate-200 font-medium">警戒</span>
+          </div>
+          <span class="text-xl">🟡</span>
+        </div>
+
+        <div class="flex items-center justify-between p-2.5 rounded-xl bg-slate-800/50 border border-slate-700/40">
+          <div class="flex items-center gap-3">
+            <span class="font-bold text-orange-400 w-6">L4</span>
+            <span class="text-slate-200 font-medium">高風險</span>
+          </div>
+          <span class="text-xl">🟠</span>
+        </div>
+
+        <div class="flex items-center justify-between p-2.5 rounded-xl bg-slate-800/50 border border-slate-700/40">
+          <div class="flex items-center gap-3">
+            <span class="font-bold text-red-400 w-6">L5</span>
+            <span class="text-slate-200 font-medium">極端</span>
+          </div>
+          <span class="text-xl">🔴</span>
+        </div>
+      </div>
+
+      <div class="text-right pt-2">
+        <button onclick="closeStrategyModal()" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold rounded-lg transition-colors">
+          關閉
+        </button>
+      </div>
+    </div>
+  </div>
+
   <script>
     const SUPABASE_URL = 'https://sktrmemtvarutrbcpwij.supabase.co';
     const SUPABASE_ANON_KEY = 'sb_publishable_iPdnGKeCEfPuH2xZBYK4Sg_G8ivGx1p';
@@ -134,6 +192,29 @@
       'L4': { signal: '高風險', action: '30%', core: '大幅減碼定期定額 / 保留單筆彈性', principle: '不追價，現金優先保留' },
       'L5': { signal: '極端', action: '0%', core: '暫停新增風險資產 / 等待分批單筆', principle: '不追價，不要求賣出既有核心資產' }
     };
+
+    // 彈窗開啟與關閉控制
+    function openStrategyModal() {
+      const modal = document.getElementById('strategyModal');
+      modal.classList.remove('hidden');
+      modal.classList.add('flex');
+    }
+
+    function closeStrategyModal() {
+      const modal = document.getElementById('strategyModal');
+      modal.classList.add('hidden');
+      modal.classList.remove('flex');
+    }
+
+    // 點擊 Modal 外部背景關閉
+    document.getElementById('strategyModal').addEventListener('click', function(e) {
+      if (e.target === this) closeStrategyModal();
+    });
+
+    // 按下 Esc 鍵關閉
+    document.addEventListener('keydown', function(e) {
+      if (e.key === 'Escape') closeStrategyModal();
+    });
 
     function getScoreColor(score) {
       if (score >= 80) return '#ef4444'; // 紅
@@ -171,20 +252,15 @@
         options: {
           responsive: true,
           maintainAspectRatio: false,
-          layout: {
-            padding: 15 // 💡 增加內部邊距防止標籤邊緣被切掉
-          },
+          layout: { padding: 15 },
           scales: {
             r: {
               angleLines: { color: 'rgba(255, 255, 255, 0.12)' },
               grid: { color: 'rgba(255, 255, 255, 0.12)' },
               pointLabels: {
                 color: (context) => getScoreColor(scores[context.index] || 0),
-                font: { 
-                  size: 13, 
-                  weight: 'bold' 
-                },
-                centerPointLabels: false, // 💡 修正文字錯位問題，使標籤精確對齊各端點
+                font: { size: 13, weight: 'bold' },
+                centerPointLabels: false,
                 padding: 10
               },
               ticks: { display: false, beginAtZero: true },
